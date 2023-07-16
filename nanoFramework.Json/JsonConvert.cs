@@ -180,15 +180,15 @@ namespace nanoFramework.Json
                     {
                         var memberProperty = (JsonProperty)m;
 
-                        if (memberProperty is JsonValue value)
+                        if (memberProperty.Value is JsonValue value)
                         {
                             rootArrayList.Add(value.Value);
                         }
-                        else if (memberProperty is JsonArray jsonArray)
+                        else if (memberProperty.Value is JsonArray jsonArray)
                         {
                             rootArrayList.Add(PopulateArrayList(jsonArray));
                         }
-                        else if (memberProperty is JsonToken)
+                        else if (memberProperty.Value is JsonToken)
                         {
                             result.Add(memberProperty.Name, PopulateObject(memberProperty.Value));
                         }
