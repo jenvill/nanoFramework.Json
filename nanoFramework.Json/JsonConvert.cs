@@ -31,6 +31,8 @@ namespace nanoFramework.Json
             public string TValue;
         }
 
+        private static object _lock = new();
+
         /// <summary>
         /// Convert an object to a JSON string.
         /// </summary>
@@ -39,7 +41,10 @@ namespace nanoFramework.Json
         /// <remarks>For objects, only public properties with getters are converted.</remarks>
         public static string SerializeObject(object oSource)
         {
-            return JsonSerializer.SerializeObject(oSource);
+            lock (_lock)
+            {
+                return JsonSerializer.SerializeObject(oSource);
+            }
         }
 
         /// <summary>
@@ -324,7 +329,7 @@ namespace nanoFramework.Json
 
                         if (memberElementType == null && memberResolver.ObjectType.FullName == "System.Collections.ArrayList")
                         {
-                            memberElementType = memberResolver.ObjectType;
+                            memberElementType = memberResolver.ElementType ?? memberResolver.ObjectType;
                             isArrayList = true;
                         }
 

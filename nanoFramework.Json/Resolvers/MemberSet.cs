@@ -4,6 +4,8 @@
 // See LICENSE file in the project root for full license information.
 //
 
+#nullable enable
+
 using System;
 
 namespace nanoFramework.Json.Resolvers
@@ -29,6 +31,7 @@ namespace nanoFramework.Json.Resolvers
         /// Type of object we are trying to set value on.
         /// </summary>
         public Type ObjectType { get; }
+        public Type? ElementType { get; }
 
         /// <summary>
         /// Gets a value indicating whether current member should be skipped
@@ -40,11 +43,12 @@ namespace nanoFramework.Json.Resolvers
         /// </summary>
         /// <param name="setValue">Deletage which tells how to set a value on object.</param>
         /// <param name="objectType">Type of object we are trying to set value on.</param>
-        public MemberSet(SetValueDelegate setValue, Type objectType)
+        public MemberSet(SetValueDelegate setValue, Type objectType, Type? elementType = null)
         {
             SetValue = setValue;
             ObjectType = objectType;
             Skip = false;
+            ElementType = elementType;
         }
 
         /// <summary>
@@ -56,6 +60,7 @@ namespace nanoFramework.Json.Resolvers
             Skip = skip;
             ObjectType = null;
             SetValue = null;
+            ElementType = null;
         }
     }
 }
