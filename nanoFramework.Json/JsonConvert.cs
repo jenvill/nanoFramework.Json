@@ -55,14 +55,17 @@ namespace nanoFramework.Json
         /// <returns></returns>
         public static object DeserializeObject(string sourceString, Type type)
         {
-            if (type == typeof(string))
+            lock (_lock)
             {
-                var converter = ConvertersMapping.GetConverter(type);
-                return converter.ToType(sourceString);
-            }
+                if (type == typeof(string))
+                {
+                    var converter = ConvertersMapping.GetConverter(type);
+                    return converter.ToType(sourceString);
+                }
 
-            var dserResult = Deserialize(sourceString);
-            return PopulateObject((JsonToken)dserResult, type, "/");
+                var dserResult = Deserialize(sourceString);
+                return PopulateObject((JsonToken)dserResult, type, "/");
+            }
         }
 
 #if NANOFRAMEWORK_1_0
@@ -219,6 +222,26 @@ namespace nanoFramework.Json
 
                 // Empty array of Types - GetConstructor didn't work unless given an empty array of Type[]
                 Type[] types = { };
+
+                foreach (var m in rootObject.Members)
+                {
+                    var memberProperty = (JsonProperty)m;
+
+                    string memberPropertyName = memberProperty.Name;
+
+                    if (memberPropertyName == "$type")
+                    {
+                        foreach (var type in rootType.Assembly.GetTypes())
+                        {
+                            if (type.BaseType == rootType &&
+                                type.Name == ((JsonValue)memberProperty.Value).Value)
+                            {
+                                rootType = type;
+                                break;
+                            }
+                        }
+                    }
+                }
 
                 ConstructorInfo ci = rootType.GetConstructor(types);
 
@@ -419,7 +442,7 @@ namespace nanoFramework.Json
 
             if (rootToken is JsonArray rootArray)
             {
-                bool isArrayList = false;
+                var isArrayList = false;
 
                 if (rootElementType == null)
                 {
