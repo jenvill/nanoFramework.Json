@@ -449,6 +449,7 @@ namespace nanoFramework.Json
                     // check if this is an ArrayList
                     if (rootType.FullName == "System.Collections.ArrayList"
                         || rootType.BaseType.FullName == "System.ValueType"
+                        || rootType.BaseType.FullName == "System.Enum"
                         || rootType.FullName == "System.String")
                     {
                         isArrayList = true;
@@ -485,7 +486,8 @@ namespace nanoFramework.Json
                     }
 
                     if ((rootType.BaseType.FullName == "System.ValueType"
-                         || rootType.FullName == "System.String")
+                        || rootType.BaseType.FullName == "System.Enum"
+                        || rootType.FullName == "System.String")
                         && rootArrayList.Count == 1)
                     {
                         // this is a case of deserialing a array with a single element,
