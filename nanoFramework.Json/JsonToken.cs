@@ -3,9 +3,6 @@
 // Portions Copyright 2007 James Newton-King, (c) Pervasive Digital LLC
 // See LICENSE file in the project root for full license information.
 //
-
-using System.Text;
-
 namespace nanoFramework.Json
 {
     /// <summary>
@@ -13,6 +10,5 @@ namespace nanoFramework.Json
     /// </summary>
     public abstract class JsonToken
     {
-        
     }
 }

@@ -16,6 +16,11 @@ namespace nanoFramework.Json
         private readonly Hashtable _members = new();
 
         /// <summary>
+        /// 
+        /// </summary>
+        public string RawValue { get; set; }
+
+        /// <summary>
         /// Gets the collection of values from <see cref="_members"/>.
         /// </summary>
         public ICollection Members => _members.Values;
@@ -25,19 +30,13 @@ namespace nanoFramework.Json
         /// </summary>
         /// <param name="name">JSON property key.</param>
         /// <param name="value">JSON property value.</param>
-        public void Add(string name, JsonToken value)
-        {
-            _members.Add(name, new JsonProperty(name, value));
-        }
+        public void Add(string name, JsonToken value) => _members.Add(name, new JsonProperty(name, value));
 
         /// <summary>
         /// Gets the value of property for given key.
         /// </summary>
         /// <param name="name">JSON property key.</param>
         /// <returns>JsonProperty object which contains key and value of object.</returns>
-        public JsonProperty Get(string name)
-        {
-            return (JsonProperty)_members[name];
-        }
+        public JsonProperty Get(string name) => (JsonProperty)_members[name];
     }
 }

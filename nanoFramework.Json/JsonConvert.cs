@@ -57,10 +57,16 @@ namespace nanoFramework.Json
         {
             lock (_lock)
             {
-                if (type == typeof(string))
+                if (type == typeof(string) ||
+                    type == typeof(int) ||
+                    type == typeof(double))
                 {
                     var converter = ConvertersMapping.GetConverter(type);
                     return converter.ToType(sourceString);
+                }
+                else if (type.IsSubclassOf(typeof(Enum)))
+                {
+                    return int.Parse(sourceString);
                 }
 
                 var dserResult = Deserialize(sourceString);
@@ -780,14 +786,14 @@ namespace nanoFramework.Json
         // Trying to deserialize a stream in nanoFramework is problematic.
         // as Stream.Peek() has not been implemented in nanoFramework
         // Therefore, read all input into the static jsonBytes[] and use jsonPos to keep track of where we are when parsing the input
-        private static object Deserialize(string sourceString)
+        public static JsonToken Deserialize(string sourceString)
         {
             var jsonBytes = Encoding.UTF8.GetBytes(sourceString);
             var jsonPos = 0;
             return Deserialize(ref jsonPos, ref jsonBytes);
         }
 
-        private static object Deserialize(Stream sourceStream)
+        private static JsonToken Deserialize(Stream sourceStream)
         {
             // Read the sourcestream into jsonBytes[]
             var jsonBytes = new byte[sourceStream.Length];
@@ -798,7 +804,7 @@ namespace nanoFramework.Json
 
         // Deserialize() now assumes that the input has been copied into jsonBytes[]
         // Keep track of position with jsonPos
-        private static JsonToken Deserialize(ref int jsonPos, ref byte[] jsonBytes)
+        public static JsonToken Deserialize(ref int jsonPos, ref byte[] jsonBytes)
         {
             LexToken token = GetNextToken(ref jsonPos, ref jsonBytes);
 
@@ -874,6 +880,7 @@ namespace nanoFramework.Json
 
         private static JsonObject ParseObject(ref int jsonPos, ref byte[] jsonBytes, ref LexToken token)
         {
+            var startPos = jsonPos;
             var result = new JsonObject();
 
             token = GetNextToken(ref jsonPos, ref jsonBytes);
@@ -922,6 +929,8 @@ namespace nanoFramework.Json
                 // unterminated json object
                 throw new DeserializationException();
             }
+
+            result.RawValue = Encoding.UTF8.GetString(jsonBytes, startPos - 1, jsonPos - startPos + 1);
 
             return result;
         }

@@ -33,6 +33,7 @@
   <Import Project="$(NanoFrameworkProjectSystemPath)NFProjectSystem.props" Condition="Exists('$(NanoFrameworkProjectSystemPath)NFProjectSystem.props')" />
   <ItemGroup>
     <Compile Include="Configuration\Settings.cs" />
+    <Compile Include="Converters\EnumConverter.cs" />
     <Compile Include="Converters\BoolConverter.cs" />
     <Compile Include="Converters\ByteConverter.cs" />
     <Compile Include="Converters\CharConverter.cs" />

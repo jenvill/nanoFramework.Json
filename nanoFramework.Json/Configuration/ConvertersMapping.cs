@@ -33,7 +33,9 @@ namespace nanoFramework.Json.Configuration
             { typeof(DateTime).FullName, new DateTimeConverter() },
             { typeof(char).FullName, new CharConverter() },
             { typeof(Guid).FullName, new GuidConverter() },
-            { typeof(DictionaryEntry).FullName, new DictionaryEntryConverter() }
+            { typeof(DictionaryEntry).FullName, new DictionaryEntryConverter() },
+            { typeof(Enum).FullName, new EnumConverter() }
+            
         };
 
         /// <summary>
