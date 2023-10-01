@@ -70,7 +70,7 @@ namespace nanoFramework.Json
                 }
 
                 var dserResult = Deserialize(sourceString);
-                return PopulateObject((JsonToken)dserResult, type, "/");
+                return PopulateObject(dserResult, type, "/");
             }
         }
 
@@ -85,7 +85,7 @@ namespace nanoFramework.Json
         public static object DeserializeObject(Stream stream, Type type)
         {
             var dserResult = Deserialize(stream);
-            return PopulateObject((JsonToken)dserResult, type, "/");
+            return PopulateObject(dserResult, type, "/");
         }
 
         /// <summary>

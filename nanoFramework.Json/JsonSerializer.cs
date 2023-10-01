@@ -84,14 +84,13 @@ namespace nanoFramework.Json
 
             foreach (MethodInfo method in methods)
             {
-                if (!ShouldSerializeMethod(method))
-                {
-                    continue;
-                }
+                if (!ShouldSerializeMethod(method)) continue;
 
                 object returnObject = method.Invoke(o, null);
                 hashtable.Add(method.Name.Substring(4), returnObject);
             }
+
+            hashtable.Add("$type", type.Name);
 
             return SerializeIDictionary(hashtable);
         }
