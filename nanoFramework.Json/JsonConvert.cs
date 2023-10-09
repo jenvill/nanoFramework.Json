@@ -239,7 +239,7 @@ namespace nanoFramework.Json
                     {
                         foreach (var type in rootType.Assembly.GetTypes())
                         {
-                            if (type.BaseType == rootType &&
+                            if (type.IsSubclassOf(rootType) &&
                                 type.Name == ((JsonValue)memberProperty.Value).Value)
                             {
                                 rootType = type;
