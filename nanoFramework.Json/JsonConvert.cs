@@ -31,8 +31,6 @@ namespace nanoFramework.Json
             public string TValue;
         }
 
-        private static object _lock = new();
-
         /// <summary>
         /// Convert an object to a JSON string.
         /// </summary>
@@ -40,12 +38,7 @@ namespace nanoFramework.Json
         /// <returns>The JSON object as a string or null when the value type is not supported.</returns>
         /// <remarks>For objects, only public properties with getters are converted.</remarks>
         public static string SerializeObject(object oSource)
-        {
-            lock (_lock)
-            {
-                return JsonSerializer.SerializeObject(oSource);
-            }
-        }
+            => JsonSerializer.SerializeObject(oSource);
 
         /// <summary>
         /// Deserializes a Json string into an object.
@@ -55,23 +48,20 @@ namespace nanoFramework.Json
         /// <returns></returns>
         public static object DeserializeObject(string sourceString, Type type)
         {
-            lock (_lock)
+            if (type == typeof(string) ||
+                type == typeof(int) ||
+                type == typeof(double))
             {
-                if (type == typeof(string) ||
-                    type == typeof(int) ||
-                    type == typeof(double))
-                {
-                    var converter = ConvertersMapping.GetConverter(type);
-                    return converter.ToType(sourceString);
-                }
-                else if (type.IsSubclassOf(typeof(Enum)))
-                {
-                    return int.Parse(sourceString);
-                }
-
-                var dserResult = Deserialize(sourceString);
-                return PopulateObject(dserResult, type, "/");
+                var converter = ConvertersMapping.GetConverter(type);
+                return converter.ToType(sourceString);
             }
+            else if (type.IsSubclassOf(typeof(Enum)))
+            {
+                return int.Parse(sourceString);
+            }
+
+            var dserResult = Deserialize(sourceString);
+            return PopulateObject(dserResult, type, "/");
         }
 
 #if NANOFRAMEWORK_1_0
