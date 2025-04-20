@@ -1,28 +1,10 @@
 # Copyright (c) .NET Foundation and Contributors
 # See LICENSE file in the project root for full license information.
 
-trigger:
-  branches:
-    include:
-      - main
-      - develop
-      - release-*
-  paths:
-    exclude:
-      - .github_changelog_generator
-      - .gitignore
-      - CHANGELOG.md
-      - CODE_OF_CONDUCT.md
-      - LICENSE.md
-      - README.md
-      - NuGet.Config
-      - assets/*
-      - config/*
-      - .github/*
-
-# PR always trigger build
-pr:
-  autoCancel: true
+# The Pipeline is going to be triggered by a call to Azure DevOps REST API
+# Manual trigger is always possible.
+trigger: none
+pr: none
 
 # add nf-tools repo to resources (for Azure Pipelines templates)
 resources:
@@ -36,26 +18,62 @@ pool:
   vmImage: 'windows-latest'
 
 variables:
-  DOTNET_NOLOGO: true
-  solution: 'nanoFramework.Json.sln'
-  buildPlatform: 'Any CPU'
-  buildConfiguration: 'Release'
-  nugetPackageName: 'nanoFramework.Json'
+  - group: sign-client-credentials
+  - name: DOTNET_NOLOGO
+    value: true  
+  - name: buildPlatform
+    value: 'Any CPU'  
+  - name: buildConfiguration
+    value: 'Release'
+  - name: solution
+    value: 'nanoFramework.Json.sln'
+  - name: nugetPackageName
+    value: 'nanoFramework.Json'
 
-steps:
+parameters:
+- name: appComponents
+  displayName: List of capabilities to run the tests on
+  type: object
+  default:
+    - none
 
-# step from template @ nf-tools repo
-# all build, update and publish steps
-- template: azure-pipelines-templates/class-lib-build.yml@templates
-  parameters:
-    sonarCloudProject: 'nanoframework_lib-nanoFramework.Json'
-    runUnitTests: true
-    unitTestRunsettings: '$(System.DefaultWorkingDirectory)\.runsettings'
+stages:
+- stage: Build
+  displayName: 'Build'
+  jobs:
+  - job: Build
+    displayName: 'Build job'
+    pool:
+      # default is the following VM Image
+      vmImage: 'windows-latest'
+    steps:
 
-# step from template @ nf-tools repo
-# report error
-- template: azure-pipelines-templates/discord-webhook-task.yml@templates  
-  parameters:
-    status: 'failure'
-    webhookUrl: '$(DiscordWebhook)'
-    message: ''
+    # step from template @ nf-tools repo
+    # all build, update and publish steps
+    - template: azure-pipelines-templates/class-lib-build.yml@templates
+      parameters:
+        sonarCloudProject: 'nanoframework_lib-nanoFramework.Json'
+        runUnitTests: true
+        unitTestRunsettings: '$(System.DefaultWorkingDirectory)\.runsettings'
+
+    # step from template @ nf-tools repo
+    # report error
+    - template: azure-pipelines-templates/discord-webhook-task.yml@templates  
+      parameters:
+        status: 'failure'
+        webhookUrl: '$(DiscordWebhook)'
+        message: ''
+
+    - task: PublishPipelineArtifact@1
+      displayName: Publish Pipeline Artifact copy
+      inputs:
+        path: '$(System.DefaultWorkingDirectory)'
+        artifactName: 'Artifacts'
+
+- ${{ each appComponents in parameters.appComponents }}:
+  - ${{ if ne(appComponents, 'none') }}:
+    - template: test.yml
+      parameters:
+        appComponents: ${{ appComponents }}
+        unitTestRunsettings: 
+          - 'UnitTestStream/nano.runsettings,UnitTestStream/bin/Release/NFUnitTest.dll'

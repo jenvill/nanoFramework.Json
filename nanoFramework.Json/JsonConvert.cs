@@ -41,16 +41,30 @@ namespace nanoFramework.Json
             => JsonSerializer.SerializeObject(oSource);
 
         /// <summary>
-        /// Deserializes a Json string into an object.
+        /// Deserializes a JSON string into an object.
         /// </summary>
-        /// <param name="sourceString"></param>
-        /// <param name="type">The object type to convert to</param>
-        /// <returns></returns>
-        public static object DeserializeObject(string sourceString, Type type)
+        /// <param name="value">The JSON string to deserialize.</param>
+        /// <param name="type">The type to deserialize to.</param>
+        /// <returns>The deserialized object.</returns>
+        public static object DeserializeObject(string value, Type type) =>
+            DeserializeObject(value, type, JsonSerializerOptions.Default);
+
+        /// <summary>
+        /// Deserializes a JSON string into an object.
+        /// </summary>
+        /// <param name="value">The JSON string to deserialize.</param>
+        /// <param name="type">The type to deserialize to.</param>
+        /// <param name="options">The <see cref="JsonSerializerOptions"/> to be used during deserialization.</param>
+        /// <returns>The deserialized object.</returns>
+        public static object DeserializeObject(string value, Type type, JsonSerializerOptions options)
         {
             if (type == typeof(string) ||
                 type == typeof(int) ||
                 type == typeof(double))
+=======
+            // Short circuit populating the object when target type is string
+            if (TypeUtils.IsString(type))
+>>>>>>> source/main
             {
                 var converter = ConvertersMapping.GetConverter(type);
                 return converter.ToType(sourceString);
