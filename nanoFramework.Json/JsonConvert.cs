@@ -5,7 +5,6 @@
 //
 
 using nanoFramework.Json.Configuration;
-using nanoFramework.Json.Converters;
 using System;
 using System.Collections;
 using System.IO;
@@ -58,30 +57,32 @@ namespace nanoFramework.Json
         /// <returns>The deserialized object.</returns>
         public static object DeserializeObject(string value, Type type, JsonSerializerOptions options)
         {
-            if (type == typeof(string) ||
-                type == typeof(int) ||
-                type == typeof(double))
-=======
             // Short circuit populating the object when target type is string
             if (TypeUtils.IsString(type))
->>>>>>> source/main
             {
                 var converter = ConvertersMapping.GetConverter(type);
-                return converter.ToType(sourceString);
+                return converter.ToType(value);
             }
             else if (type.IsSubclassOf(typeof(Enum)))
             {
                 return int.Parse(sourceString);
             }
-
-            var dserResult = Deserialize(sourceString);
-            return PopulateObject(dserResult, type, "/");
+            return PopulateObject(Deserialize(value), type, "/", options);
         }
 
+        // TODO: Is this still required?
 #if NANOFRAMEWORK_1_0
+        /// <summary>
+        /// Deserializes a JSON <see cref="Stream"/> into an object.
+        /// </summary>
+        /// <param name="stream">The JSON stream to deserialize.</param>
+        /// <param name="type">The type to deserialize to.</param>
+        /// <returns>The deserialized object.</returns>
+        public static object DeserializeObject(Stream stream, Type type) =>
+            DeserializeObject(stream, type, JsonSerializerOptions.Default);
 
         /// <summary>
-        /// Deserializes a Json string into an object.
+        /// Deserializes a JSON <see cref="Stream"/> into an object.
         /// </summary>
         /// <param name="stream"></param>
         /// <param name="type">The object type to convert to</param>
@@ -92,20 +93,35 @@ namespace nanoFramework.Json
             return PopulateObject(dserResult, type, "/");
         }
 
+        /// <param name="stream">The JSON stream to deserialize.</param>
+        /// <param name="type">The type to deserialize to.</param>
+        /// <param name="options">The <see cref="JsonSerializerOptions"/> to be used during deserialization.</param>
+        /// <returns>The deserialized object.</returns>
+        public static object DeserializeObject(Stream stream, Type type, JsonSerializerOptions options) =>
+            PopulateObject(Deserialize(stream), type, "/", options);
+
         /// <summary>
-        /// Deserializes a Json string into an object.
+        /// Deserializes a JSON <see cref="StreamReader"/> into an object.
         /// </summary>
-        /// <param name="dr"></param>
-        /// <param name="type">The object type to convert to</param>
-        /// <returns></returns>
-        public static object DeserializeObject(StreamReader dr, Type type)
+        /// <param name="streamReader">The JSON stream reader to deserialize.</param>
+        /// <param name="type">The type to deserialize to.</param>
+        /// <returns>The deserialized object.</returns>
+        public static object DeserializeObject(StreamReader streamReader, Type type) =>
+            DeserializeObject(streamReader, type, JsonSerializerOptions.Default);
+
+        /// <summary>
+        /// Deserializes a JSON <see cref="StreamReader"/> into an object.
+        /// </summary>
+        /// <param name="streamReader">The JSON stream reader to deserialize.</param>
+        /// <param name="type">The type to deserialize to.</param>
+        /// <param name="options">The <see cref="JsonSerializerOptions"/> to be used during deserialization.</param>
+        /// <returns>The deserialized object.</returns>
+        public static object DeserializeObject(StreamReader streamReader, Type type, JsonSerializerOptions options)
         {
-            var dserResult = Deserialize(dr);
-
-            return PopulateObject((JsonToken)dserResult, type, "/");
+            return PopulateObject(Deserialize(streamReader), type, "/", options);
         }
-
 #endif
+
         private static bool ShouldSkipConvert(Type sourceType, Type targetType, bool forceConversion)
         {
             if (forceConversion)
@@ -142,7 +158,7 @@ namespace nanoFramework.Json
             return value;
         }
 
-        private static object PopulateObject(JsonToken rootToken, Type rootType, string rootPath)
+        private static object PopulateObject(JsonToken rootToken, Type rootType, string rootPath, JsonSerializerOptions options)
         {
             if (
                 (rootToken == null)
@@ -153,12 +169,11 @@ namespace nanoFramework.Json
                 throw new DeserializationException();
             }
 
-            Type rootElementType = rootType.GetElementType();
+            var rootElementType = rootType.GetElementType();
 
             if (rootToken is JsonObject rootObject)
             {
-                if (rootElementType == null
-                    && rootType.FullName == "System.Collections.Hashtable")
+                if (rootElementType is null && TypeUtils.IsHashTable(rootType))
                 {
                     Hashtable rootInstanceHashtable = new();
 
@@ -187,8 +202,7 @@ namespace nanoFramework.Json
                     return rootInstanceHashtable;
                 }
 
-                if (rootElementType == null
-                    && rootType.FullName == "System.Collections.ArrayList")
+                if (rootElementType is null && TypeUtils.IsArrayList(rootType))
                 {
                     ArrayList rootArrayList = new();
 
@@ -292,7 +306,7 @@ namespace nanoFramework.Json
                     }
 
                     // Call current resolver to get info how to deal with data
-                    var memberResolver = Settings.Resolver.Get(memberPropertyName, rootType);
+                    var memberResolver = options.Resolver.Get(memberPropertyName, rootType, options);
                     if (memberResolver.Skip)
                     {
                         continue;
@@ -319,7 +333,7 @@ namespace nanoFramework.Json
 
                         // check if property type it's HashTable
                         // whole if can be replaced with memberObject = PopulateObject(memberProperty.Value, memberType, memberPath);??
-                        if (memberResolver.ObjectType.FullName == "System.Collections.Hashtable")
+                        if (TypeUtils.IsHashTable(memberResolver.ObjectType))
                         {
                             Hashtable table = new();
 
@@ -343,7 +357,7 @@ namespace nanoFramework.Json
                         }
                         else
                         {
-                            memberObject = PopulateObject(memberProperty.Value, memberResolver.ObjectType, memberPath);
+                            memberObject = PopulateObject(memberProperty.Value, memberResolver.ObjectType, memberPath, options);
                         }
 
                         memberResolver.SetValue(rootInstance, memberObject);
@@ -360,7 +374,7 @@ namespace nanoFramework.Json
                         Type memberElementType = memberResolver.ObjectType.GetElementType();
                         bool isArrayList = false;
 
-                        if (memberElementType == null && memberResolver.ObjectType.FullName == "System.Collections.ArrayList")
+                        if (memberElementType is null && TypeUtils.IsArrayList(memberResolver.ObjectType))
                         {
                             memberElementType = memberResolver.ElementType ?? memberResolver.ObjectType;
                             isArrayList = true;
@@ -393,7 +407,7 @@ namespace nanoFramework.Json
 
                                 string memberElementPath = $"{rootPath}/{memberProperty.Name}/{memberElementType.Name}";
 
-                                var itemObj = PopulateObject(item, memberElementType, memberElementPath);
+                                var itemObj = PopulateObject(item, memberElementType, memberElementPath, options);
 
                                 memberValueArrayList.Add(itemObj);
                             }
@@ -408,19 +422,18 @@ namespace nanoFramework.Json
                         {
                             ArrayList targetArray = new();
 
-                            for (int i = 0; i < memberValueArrayList.Count; i++)
+                            for (var i = 0; i < memberValueArrayList.Count; i++)
                             {
+                                var item = memberValueArrayList[i];
                                 // Test if we have only 1 element and that the element is a Hashtable.
                                 // In this case, we'll make it more efficient and add it as an Hashtable.
-                                if ((memberValueArrayList[i].GetType() == typeof(ArrayList)) &&
-                                    (((ArrayList)memberValueArrayList[i]).Count == 1) &&
-                                    ((ArrayList)memberValueArrayList[i])[0].GetType() == typeof(Hashtable))
+                                if (item is ArrayList { Count: 1 } itemArrayList && itemArrayList[0] is Hashtable elementHashTable)
                                 {
-                                    targetArray.Add(((ArrayList)memberValueArrayList[i])[0]);
+                                    targetArray.Add(elementHashTable);
                                 }
                                 else
                                 {
-                                    targetArray.Add(memberValueArrayList[i]);
+                                    targetArray.Add(item);
                                 }
                             }
 
@@ -457,10 +470,7 @@ namespace nanoFramework.Json
                 if (rootElementType == null)
                 {
                     // check if this is an ArrayList
-                    if (rootType.FullName == "System.Collections.ArrayList"
-                        || rootType.BaseType.FullName == "System.ValueType"
-                        || rootType.BaseType.FullName == "System.Enum"
-                        || rootType.FullName == "System.String")
+                    if (TypeUtils.IsArrayList(rootType) || TypeUtils.IsString(rootType) || TypeUtils.IsValueType(rootType))
                     {
                         isArrayList = true;
 
@@ -495,13 +505,9 @@ namespace nanoFramework.Json
                         }
                     }
 
-                    if ((rootType.BaseType.FullName == "System.ValueType"
-                        || rootType.BaseType.FullName == "System.Enum"
-                        || rootType.FullName == "System.String")
-                        && rootArrayList.Count == 1)
+                    if ((TypeUtils.IsString(rootType) || TypeUtils.IsValueType(rootType)) && rootArrayList.Count == 1)
                     {
-                        // this is a case of deserialing a array with a single element,
-                        // so just return the element
+                        // This is a case of deserializing an array with a single element, so just return the element
                         return rootArrayList[0];
                     }
 
@@ -543,7 +549,7 @@ namespace nanoFramework.Json
                                 itemPath = itemPath + '/' + rootElementType.Name;
                             }
 
-                            var itemObj = PopulateObject(item, rootElementType, itemPath);
+                            var itemObj = PopulateObject(item, rootElementType, itemPath, options);
 
                             rootArrayList.Add(itemObj);
                         }
@@ -866,7 +872,7 @@ namespace nanoFramework.Json
             return result;
         }
 
-        private static object Deserialize(StreamReader dr)
+        private static JsonToken Deserialize(StreamReader dr)
         {
             // Read the DataReader into jsonBytes[]
             var jsonBytes = new byte[dr.BaseStream.Length];
@@ -1130,6 +1136,18 @@ namespace nanoFramework.Json
                             ch = '\n';
                             break;
 
+                        case 'b':
+                            ch = '\b';
+                            break;
+
+                        case 'f':
+                            ch = '\f';
+                            break;
+
+                        case '\\':
+                            ch = '\\';
+                            break;
+
                         case 'u':
                             unicodeEncoded = true;
                             break;
@@ -1265,6 +1283,14 @@ namespace nanoFramework.Json
                                 // The ch must match openQuote, or otherwise we should have eaten it above as string content
 
                                 var stringValue = sb.ToString();
+
+                                // This adds an extra set of quotes since an extra set is removed during de-serialization
+                                if (ch == '"' && stringValue.StartsWith("\""))
+                                {
+                                    sb.Insert(0, "\"", 1);
+                                    sb.Append("\"");
+                                    stringValue = sb.ToString();
+                                }
 
                                 if (DateTimeExtensions.ConvertFromString(stringValue, out _))
                                 {
