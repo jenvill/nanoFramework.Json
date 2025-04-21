@@ -65,7 +65,7 @@ namespace nanoFramework.Json
             }
             else if (type.IsSubclassOf(typeof(Enum)))
             {
-                return int.Parse(sourceString);
+                return int.Parse(value);
             }
             return PopulateObject(Deserialize(value), type, "/", options);
         }
@@ -81,17 +81,17 @@ namespace nanoFramework.Json
         public static object DeserializeObject(Stream stream, Type type) =>
             DeserializeObject(stream, type, JsonSerializerOptions.Default);
 
-        /// <summary>
-        /// Deserializes a JSON <see cref="Stream"/> into an object.
-        /// </summary>
-        /// <param name="stream"></param>
-        /// <param name="type">The object type to convert to</param>
-        /// <returns></returns>
-        public static object DeserializeObject(Stream stream, Type type)
-        {
-            var dserResult = Deserialize(stream);
-            return PopulateObject(dserResult, type, "/");
-        }
+        ///// <summary>
+        ///// Deserializes a JSON <see cref="Stream"/> into an object.
+        ///// </summary>
+        ///// <param name="stream"></param>
+        ///// <param name="type">The object type to convert to</param>
+        ///// <returns></returns>
+        //public static object DeserializeObject(Stream stream, Type type)
+        //{
+        //    var dserResult = Deserialize(stream);
+        //    return PopulateObject(dserResult, type, "/");
+        //}
 
         /// <param name="stream">The JSON stream to deserialize.</param>
         /// <param name="type">The type to deserialize to.</param>
