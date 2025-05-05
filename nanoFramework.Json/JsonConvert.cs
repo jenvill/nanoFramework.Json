@@ -63,7 +63,7 @@ namespace nanoFramework.Json
                 var converter = ConvertersMapping.GetConverter(type);
                 return converter.ToType(value);
             }
-            else if (type.IsSubclassOf(typeof(Enum)))
+            else if (type.IsSubclassOf(typeof(Enum)) || type == typeof(int))
             {
                 return int.Parse(value);
             }
@@ -1171,7 +1171,10 @@ namespace nanoFramework.Json
                         StringBuilder encodedValue = new();
 
                         // advance position to next char
-                        jsonPos++;
+                        jsonPos++; 
+
+                        if (jsonPos >= jsonBytes.Length) return EndToken(sb);
+
                         ch = (char)jsonBytes[jsonPos];
 
                         for (int i = 0; i < 4; i++)
@@ -1181,6 +1184,8 @@ namespace nanoFramework.Json
                                 numberCounter++;
 
                                 encodedValue.Append(ch);
+
+                                if (jsonPos >= jsonBytes.Length) return EndToken(sb);
 
                                 ch = (char)jsonBytes[jsonPos];
 
@@ -1227,6 +1232,8 @@ namespace nanoFramework.Json
                     while (IsNumberChar(ch))
                     {
                         sb.Append(ch);
+
+                        if (jsonPos >= jsonBytes.Length) return EndToken(sb);
 
                         // nanoFramework doesn't support Peek() for Streams or DataReaders
                         // This is why we converted everything to a byte[] instead of trying to work directly from a Stream or a DataReader
